@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GERENCIADOR DE BANCA OB</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 500px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0 0 0 / 10%); }
+        h1 { text-align: center; color: #333; margin-bottom: 5px; }
+        
+        /* Estilo para o nome: CAIXA ALTA e Negrito */
+        #personalizacao { 
+            text-align: center; 
+            font-size: 1.1em; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            margin-bottom: 20px; 
+            color: #333; 
+        } 
+        
+        .campo { margin-bottom: 15px; }
+        .campo label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .campo input[type="number"], .campo button { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .campo button { cursor: pointer; margin-top: 10px; font-weight: bold; }
+        /* Saída e Infos */
+        #resultado-entrada { font-size: 1.2em; color: #333; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 10px; }
+        #banca-info { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 10px; background-color: #e9ecef; border-radius: 4px; }
+        .banca-valor { font-size: 1.1em; font-weight: bold; }
+        .win { background-color: #28a745; color: white; }
+        .loss { background-color: #dc3545; color: white; }
+        .disabled { opacity: 0.6; cursor: not-allowed; }
+        /* Estilo Histórico */
+        #estatisticas-historico { display: flex; justify-content: space-between; margin-top: 15px; padding: 8px; border-bottom: 1px solid #ddd; }
+        #estatisticas-historico span { font-weight: bold; }
+        #historico { margin-top: 25px; }
+        #historico h3 { margin-bottom: 10px; color: #555; }
+        #lista-historico { list-style: none; padding: 0; }
+        #lista-historico li { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px dashed #ddd; }
+        .historico-win { color: #28a745; font-weight: bold; }
+        .historico-loss { color: #dc3545; font-weight: bold; }
+        /* Estilo do botão Renomear no final */
+        .config-botoes { text-align: center; margin-top: 10px; }
+        .config-botoes button { padding: 5px 10px; font-size: 0.9em; width: 100%; margin-bottom: 10px; }
+        
+        /* Estilos da nova seção */
+        .secao-meta { border-top: 3px solid #007bff; margin-top: 30px; padding-top: 15px; }
+        .secao-meta h2 { color: #007bff; text-align: center; margin-bottom: 20px; }
+        #resultado-bingo { margin-top: 15px; padding: 10px; border: 1px dashed #007bff; text-align: center; font-weight: bold; }
+        #progresso-diario { margin-top: 15px; text-align: center; }
+        #botoes-bingo button { margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>GERENCIADOR DE BANCA</h1>
+    <div id="personalizacao"></div> <div id="banca-info">
+        <div class="banca-campo">
+            <label>Banca Inicial:</label>
+            <span id="banca-inicial" class="banca-valor">R$ 0,00</span>
+        </div>
+        <div class="banca-campo">
+            <label>Banca Atual:</label>
+            <span id="banca-atual" class="banca-valor">R$ 0,00</span>
+        </div>
+    </div>
+
+    <div id="configuracoes">
+        <div class="campo">
+            <label for="input-banca-inicial">Definir Saldo Inicial:</label>
+            <input type="number" id="input-banca-inicial" value="" step="0.01" placeholder="Ex: 100.00">
+        </div>
+
+        <div class="campo">
+            <label for="meta-lucro">Porcentagem de Lucro (%):</label>
+            <input type="number" id="meta-lucro" value="" min="0.01" step="0.01" placeholder="Ex: 10">
+        </div>
+        
+        <div class="campo">
+            <label for="payout-percent">Payout da Plataforma (%):</label>
+            <input type="number" id="payout-percent" value="" min="0.01" max="99" step="0.01" placeholder="Ex: 90">
+        </div>
+
+        <div class="campo">
+            <label for="num-entradas">Número de Entradas:</label>
+            <input type="number" id="num-entradas" value="" min="1" step="1" placeholder="Ex: 2">
+        </div>
+
+        <button onclick="calcularEntrada()">CALCULAR ENTRADA</button>
+        <div id="resultado-entrada">Preencha os campos e clique em CALCULAR ENTRADA</div>
+    </div>
+
+    <hr style="margin-top: 20px;">
+
+    <div id="operacao-botoes" style="text-align: center; margin-top: 20px;">
+        <button id="btn-nova-operacao" onclick="toggleResultadoBotoes(true)" style="background-color: #007bff; color: white; margin-bottom: 15px;" class="disabled" disabled>NOVA OPERAÇÃO</button>
+        <div id="botoes-resultado" style="display: none;">
+            <button class="win" onclick="registrarResultado('win')">WIN (Ganho)</button>
+            <button class="loss" onclick="registrarResultado('loss')">LOSS (Perda)</button>
+        </div>
+    </div>
+
+    <div id="historico">
+        <h3>Estatísticas de Desempenho</h3>
+        <div id="estatisticas-historico">
+            <span>N° de WIN: <span id="count-wins" class="historico-win">0</span></span>
+            <span>N° de LOSS: <span id="count-losses" class="historico-loss">0</span></span>
+            <span>Total: <span id="count-total">0</span></span>
+        </div>
+
+        <h3>Últimas Operações</h3>
+        <ul id="lista-historico">
+            </ul>
+        
+        <div class="config-botoes">
+            <button onclick="perguntarPersonalizacao()" style="background-color: #007bff; color: white;">EDITAR NOME</button>
+            <button onclick="limparHistorico()" style="background-color: #6c757d; color: white;">Limpar Histórico e Resetar Banca</button>
+        </div>
+    </div>
+
+    <div id="bingo-secao" class="secao-meta">
+        <h2>🎯 BINGO DO MÊS / META AGRESSIVA</h2>
+
+        <div class="campo">
+            <label for="bingo-meta-total">Meta Total (R$):</label>
+            <input type="number" id="bingo-meta-total" value="1000" step="0.01" placeholder="Ex: 1000.00">
+        </div>
+        
+        <div class="campo">
+            <label for="bingo-saldo-inicial">Saldo Atual (R$):</label>
+            <input type="number" id="bingo-saldo-inicial" value="10" step="0.01" placeholder="Ex: 10.00">
+        </div>
+
+        <div class="campo">
+            <label for="bingo-num-dias">Número de Dias para a Meta:</label>
+            <input type="number" id="bingo-num-dias" value="20" min="1" step="1" placeholder="Ex: 20">
+        </div>
+
+        <button onclick="calcularBingo()">CALCULAR META DIÁRIA (BINGO)</button>
+        
+        <div id="resultado-bingo">
+            Insira os valores e clique em CALCULAR META DIÁRIA (BINGO).
+        </div>
+
+        <hr style="margin-top: 20px; border-style: dotted;">
+
+        <div id="progresso-diario" style="display: none;">
+            <h3>Progresso Diário</h3>
+            <p>Meta Diária de Lucro: <strong id="bingo-meta-diaria">R$ 0,00</strong></p>
+            <p>Lucro do Dia: <strong id="bingo-lucro-dia" style="color: blue;">R$ 0,00</strong></p>
+            <p>WINS Faltando: <strong id="bingo-wins-restantes">0</strong></p>
+            
+            <div id="botoes-bingo" class="config-botoes">
+                <button class="win" onclick="registrarBingo('win')">WIN</button>
+                <button class="loss" onclick="registrarBingo('loss')">LOSS</button>
+                <button onclick="resetarMetaDiaria()" style="background-color: #ffc107; color: black;">Zerar Progresso do Dia</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+<script>
+    // VARIÁVEIS DO GERENCIADOR PRINCIPAL
+    let bancaInicial = 0;
+    let bancaAtual = 0;
+    let valorPorEntrada = 0;
+    let bancaInicialFixada = false;
+    let payoutDecimal = 0;
+    let historicoOperacoes = []; 
+    let nomeUsuario = "";
+    
+    // VARIÁVEIS DO BINGO
+    let bingoMetaTotal = 0;
+    let bingoSaldoAtual = 0;
+    let bingoNumDias = 0;
+    let bingoMetaDiaria = 0;
+    let bingoLucroDoDia = 0;
+    let bingoValorPorWin = 0; // Valor que cada WIN contribui para a meta diária (investimento + lucro)
+
+    // --- FUNÇÕES DE ARMAZENAMENTO (LOCALSTORAGE) ---
+    function salvarDados() {
+        localStorage.setItem('bancaInicial', bancaInicial);
+        localStorage.setItem('bancaAtual', bancaAtual);
+        localStorage.setItem('bancaInicialFixada', bancaInicialFixada);
+        localStorage.setItem('historicoOperacoes', JSON.stringify(historicoOperacoes));
+        localStorage.setItem('nomeUsuario', nomeUsuario);
+        
+        // Salvar dados do Bingo
+        localStorage.setItem('bingoMetaTotal', bingoMetaTotal);
+        localStorage.setItem('bingoSaldoAtual', bingoSaldoAtual);
+        localStorage.setItem('bingoNumDias', bingoNumDias);
+        localStorage.setItem('bingoLucroDoDia', bingoLucroDoDia);
+    }
+
+    function carregarDados() {
+        const savedBancaInicial = localStorage.getItem('bancaInicial');
+        const savedBancaAtual = localStorage.getItem('bancaAtual');
+        const savedFixada = localStorage.getItem('bancaInicialFixada');
+        const savedHistorico = localStorage.getItem('historicoOperacoes');
+        const savedNome = localStorage.getItem('nomeUsuario');
+        
+        // Carregar dados do Bingo
+        const savedBingoMetaTotal = localStorage.getItem('bingoMetaTotal');
+        const savedBingoSaldoAtual = localStorage.getItem('bingoSaldoAtual');
+        const savedBingoNumDias = localStorage.getItem('bingoNumDias');
+        const savedBingoLucroDoDia = localStorage.getItem('bingoLucroDoDia');
+
+        // Lógica de personalização
+        if (savedNome) {
+            nomeUsuario = savedNome;
+        } else {
+            perguntarPersonalizacao();
+            return; 
+        }
+
+        // Lógica da Banca Principal
+        if (savedBancaInicial !== null) {
+            bancaInicial = parseFloat(savedBancaInicial);
+            bancaAtual = parseFloat(savedBancaAtual);
+            bancaInicialFixada = (savedFixada === 'true');
+            document.getElementById('input-banca-inicial').value = bancaAtual.toFixed(2);
+        }
+
+        if (savedHistorico) {
+            historicoOperacoes = JSON.parse(savedHistorico);
+        }
+        
+        if (bancaInicialFixada) {
+            document.getElementById('input-banca-inicial').disabled = true;
+            document.getElementById('input-banca-inicial').style.backgroundColor = '#f0f0f0';
+        }
+        
+        // Carregar dados do Bingo
+        if (savedBingoMetaTotal) {
+            bingoMetaTotal = parseFloat(savedBingoMetaTotal);
+            bingoSaldoAtual = parseFloat(savedBingoSaldoAtual);
+            bingoNumDias = parseInt(savedBingoNumDias);
+            bingoLucroDoDia = parseFloat(savedBingoLucroDoDia);
+            
+            document.getElementById('bingo-meta-total').value = bingoMetaTotal;
+            document.getElementById('bingo-saldo-inicial').value = bingoSaldoAtual;
+            document.getElementById('bingo-num-dias').value = bingoNumDias;
+            
+            // Recalcula o plano para a meta
+            if (bingoMetaTotal > 0 && bingoNumDias > 0 && bingoSaldoAtual >= 0) {
+                calcularBingo();
+            }
+        }
+    }
+    
+    // --- FUNÇÃO DE PERSONALIZAÇÃO (APENAS NOME) ---
+    function perguntarPersonalizacao() {
+        const nome = prompt("Digite seu Nome e Sobrenome:");
+        if (nome && nome.trim() !== "") {
+            nomeUsuario = nome.trim();
+        } else {
+            if (!nomeUsuario) nomeUsuario = "USUÁRIO"; 
+        }
+        salvarDados(); 
+        atualizarDisplay(); 
+    }
+
+    // --- FUNÇÕES DE DISPLAY E INICIALIZAÇÃO ---
+    function atualizarDisplay() {
+        document.getElementById('banca-inicial').innerText = `R$ ${bancaInicial.toFixed(2).replace('.', ',')}`;
+        document.getElementById('banca-atual').innerText = `R$ ${bancaAtual.toFixed(2).replace('.', ',')}`;
+        
+        const elementoPersonalizacao = document.getElementById('personalizacao');
+        elementoPersonalizacao.innerText = nomeUsuario; 
+
+        renderizarHistorico();
+        atualizarDisplayBingo();
+    }
+
+    function atualizarDisplayBingo() {
+        const payoutFixo = 0.90; // 90%
+        bingoMetaDiaria = (bingoMetaTotal - bingoSaldoAtual) / bingoNumDias;
+        bingoValorPorWin = bingoMetaDiaria / payoutFixo; // Valor total do Win (Entrada + Lucro)
+
+        if (bingoMetaDiaria > 0) {
+            document.getElementById('progresso-diario').style.display = 'block';
+
+            // Atualiza os valores
+            document.getElementById('bingo-meta-diaria').innerText = `R$ ${bingoMetaDiaria.toFixed(2).replace('.', ',')}`;
+            document.getElementById('bingo-lucro-dia').innerText = `R$ ${bingoLucroDoDia.toFixed(2).replace('.', ',')}`;
+
+            const winsRestantes = Math.ceil((bingoMetaDiaria - bingoLucroDoDia) / (bingoValorPorWin * payoutFixo));
+            document.getElementById('bingo-wins-restantes').innerText = Math.max(0, winsRestantes);
+
+            if (bingoLucroDoDia >= bingoMetaDiaria) {
+                document.getElementById('bingo-lucro-dia').style.color = '#28a745'; // Verde
+                document.getElementById('bingo-wins-restantes').innerText = 0;
+            } else {
+                document.getElementById('bingo-lucro-dia').style.color = 'blue';
+            }
+
+        } else {
+            document.getElementById('progresso-diario').style.display = 'none';
+        }
+    }
+
+
+    function lerBancaInicialInput() {
+        const inputBanca = parseFloat(document.getElementById('input-banca-inicial').value);
+        return isNaN(inputBanca) ? 0 : inputBanca;
+    }
+
+    function renderizarHistorico() {
+        const lista = document.getElementById('lista-historico');
+        lista.innerHTML = '';
+        
+        // 1. Contadores
+        let countWins = 0;
+        let countLosses = 0;
+
+        historicoOperacoes.forEach(op => {
+            if (op.resultado === 'WIN') {
+                countWins++;
+            } else {
+                countLosses++;
+            }
+        });
+
+        document.getElementById('count-wins').innerText = countWins;
+        document.getElementById('count-losses').innerText = countLosses;
+        document.getElementById('count-total').innerText = countWins + countLosses;
+        
+        // 2. Lista de Operações
+        const ultimasOperacoes = historicoOperacoes.slice(-10).reverse(); 
+
+        ultimasOperacoes.forEach(op => {
+            const li = document.createElement('li');
+            const classe = op.resultado === 'WIN' ? 'historico-win' : 'historico-loss';
+            const data = new Date(op.timestamp).toLocaleTimeString('pt-BR');
+
+            li.innerHTML = `
+                <span>${data} - ${op.resultado}</span>
+                <span class="${classe}">P&L: R$ ${op.pnl.toFixed(2).replace('.', ',')}</span>
+            `;
+            lista.appendChild(li);
+        });
+    }
+
+    function limparHistorico() {
+        if (confirm("Tem certeza que deseja limpar o histórico e resetar a banca para R$ 0,00?")) {
+            localStorage.clear();
+            window.location.reload(); 
+        }
+    }
+
+    // --- LÓGICA DO GERENCIADOR (Cálculo e Operação) ---
+    function calcularEntrada() {
+        const inputInicial = document.getElementById('input-banca-inicial');
+        const metaLucroPercentual = parseFloat(document.getElementById('meta-lucro').value) / 100;
+        const payoutPercent = parseFloat(document.getElementById('payout-percent').value);
+        const numEntradas = parseInt(document.getElementById('num-entradas').value);
+        
+        payoutDecimal = payoutPercent / 100;
+
+        const novoSaldo = lerBancaInicialInput();
+        
+        if (!bancaInicialFixada) {
+            if (novoSaldo <= 0) {
+                document.getElementById('resultado-entrada').innerText = "Erro: Insira um Saldo Inicial válido.";
+                return;
+            }
+            bancaInicial = novoSaldo;
+            bancaInicialFixada = true;
+            inputInicial.disabled = true; 
+            inputInicial.style.backgroundColor = '#f0f0f0';
+        }
+
+        bancaAtual = novoSaldo; 
+        const bancaBaseCalculo = bancaAtual;
+
+        if (bancaBaseCalculo <= 0 || metaLucroPercentual <= 0 || numEntradas < 1 || isNaN(metaLucroPercentual) || isNaN(numEntradas) || payoutPercent <= 0 || isNaN(payoutPercent)) {
+            document.getElementById('resultado-entrada').innerText = "Erro: Preencha todos os campos (Banca, Meta, Payout e Entradas) corretamente.";
+            toggleResultadoBotoes(false);
+            return;
+        }
+
+        const lucroRealDesejado = bancaBaseCalculo * metaLucroPercentual;
+        const valorTotalInvestimento = lucroRealDesejado / payoutDecimal;
+        valorPorEntrada = valorTotalInvestimento / numEntradas;
+
+        document.getElementById('resultado-entrada').innerHTML = `
+            Valor da entrada: <strong>R$ ${valorPorEntrada.toFixed(2).replace('.', ',')}</strong>
+        `;
+
+        document.getElementById('btn-nova-operacao').disabled = false;
+        document.getElementById('btn-nova-operacao').classList.remove('disabled');
+        toggleResultadoBotoes(false);
+        atualizarDisplay();
+        salvarDados(); 
+    }
+
+    function registrarResultado(resultado) {
+        if (valorPorEntrada <= 0 || !bancaInicialFixada) return;
+
+        let PnL = 0;
+        const valorApostado = valorPorEntrada;
+        
+        if (resultado === 'win') {
+            PnL = valorApostado * payoutDecimal; 
+        } else {
+            PnL = -valorApostado;
+        }
+
+        bancaAtual += PnL;
+
+        historicoOperacoes.push({
+            timestamp: new Date().getTime(),
+            resultado: resultado.toUpperCase(),
+            valor: valorApostado,
+            pnl: PnL
+        });
+
+        document.getElementById('input-banca-inicial').value = bancaAtual.toFixed(2);
+        atualizarDisplay();
+        salvarDados();
+
+        document.getElementById('resultado-entrada').innerHTML = `
+            ${resultado.toUpperCase()}! P&L: R$ ${PnL.toFixed(2).replace('.', ',')}.
+            <br>Novo Saldo: R$ ${bancaAtual.toFixed(2).replace('.', ',')}.
+            <br>Recalcule a entrada para operar novamente.
+        `;
+
+        toggleResultadoBotoes(false);
+        document.getElementById('btn-nova-operacao').disabled = true;
+        document.getElementById('btn-nova-operacao').classList.add('disabled');
+        valorPorEntrada = 0; 
+    }
+
+    function toggleResultadoBotoes(show) {
+        const botoesResultado = document.getElementById('botoes-resultado');
+        const btnNovaOperacao = document.getElementById('btn-nova-operacao');
+
+        if (show && valorPorEntrada > 0) {
+            botoesResultado.style.display = 'block';
+            btnNovaOperacao.style.display = 'none';
+        } else {
+            botoesResultado.style.display = 'none';
+            btnNovaOperacao.style.display = 'block';
+        }
+    }
+
+
+    // --- BINGO DO MÊS / METAS AGRESSIVAS ---
+    const BINGO_PAYOUT = 0.90; // Payout fixo para os cálculos do Bingo (90%)
+
+    function calcularBingo() {
+        const metaTotal = parseFloat(document.getElementById('bingo-meta-total').value);
+        const saldoAtual = parseFloat(document.getElementById('bingo-saldo-inicial').value);
+        const numDias = parseInt(document.getElementById('bingo-num-dias').value);
+
+        if (isNaN(metaTotal) || isNaN(saldoAtual) || isNaN(numDias) || metaTotal <= saldoAtual || numDias <= 0) {
+            document.getElementById('resultado-bingo').innerText = "Erro: Preencha os campos corretamente. A Meta deve ser maior que o Saldo e o N° de Dias deve ser maior que zero.";
+            document.getElementById('progresso-diario').style.display = 'none';
+            return;
+        }
+
+        // Atualiza variáveis globais do Bingo
+        bingoMetaTotal = metaTotal;
+        bingoSaldoAtual = saldoAtual;
+        bingoNumDias = numDias;
+        
+        const lucroFaltante = metaTotal - saldoAtual;
+        bingoMetaDiaria = lucroFaltante / numDias; // Meta de lucro por dia
+        
+        // CÁLCULO INVERSO: Valor total do Win (Investimento + Lucro) necessário para atingir a meta diária
+        // Valor Investido (Entrada) * Payout = Lucro
+        // Entrada * (1 + Payout) = Win Total
+        // Para simplificar, calculamos o valor do investimento necessário:
+        const investimentoNecessario = bingoMetaDiaria / BINGO_PAYOUT;
+        
+        const valorEntrada = investimentoNecessario; // A entrada é o valor que precisa ser investido para o lucro desejado
+        const lucroPorWin = valorEntrada * BINGO_PAYOUT;
+
+        // O valor de entrada (o investimento que o usuário deve fazer)
+        bingoValorPorWin = lucroPorWin; // Armazena o lucro por win
+
+        const numWinsPorDia = bingoMetaDiaria / lucroPorWin;
+        
+        document.getElementById('resultado-bingo').innerHTML = `
+            Meta de Lucro Diária: <strong>R$ ${bingoMetaDiaria.toFixed(2).replace('.', ',')}</strong>
+            <br>
+            Valor da Entrada (Investimento): <strong>R$ ${valorEntrada.toFixed(2).replace('.', ',')}</strong>
+            <br>
+            WINS (Lucros) Necessários por Dia: <strong>${Math.ceil(numWinsPorDia)}</strong>
+        `;
+        
+        // Salva o novo saldo inicial para o bingo
+        salvarDados();
+        // Atualiza o display de progresso
+        atualizarDisplayBingo();
+    }
+
+    function registrarBingo(resultado) {
+        if (bingoMetaDiaria <= 0) {
+            alert("Calcule a Meta Diária primeiro.");
+            return;
+        }
+
+        let lucro = 0;
+        
+        // O valor do Win é o lucro que entra na conta (Entrada * Payout)
+        if (resultado === 'win') {
+            lucro = bingoValorPorWin; // Lucro por win já calculado
+        } else {
+            // Se for LOSS, precisamos saber o valor da entrada para subtrair
+            const investimentoNecessario = bingoMetaDiaria / BINGO_PAYOUT;
+            const valorEntrada = investimentoNecessario; 
+            lucro = -valorEntrada; // Perde o valor total da entrada (investimento)
+        }
+
+        bingoLucroDoDia += lucro;
+        
+        // Atualiza o saldo atual (que é o saldo inicial do bingo)
+        bingoSaldoAtual += lucro;
+
+        // Se o saldo atual for menor que 0, ele zera, pois não é possível operar
+        if (bingoSaldoAtual < 0) bingoSaldoAtual = 0; 
+
+        // Atualiza o input de saldo
+        document.getElementById('bingo-saldo-inicial').value = bingoSaldoAtual.toFixed(2);
+
+        salvarDados();
+        atualizarDisplayBingo();
+
+        if (bingoSaldoAtual <= 0) {
+            alert("ATENÇÃO: Sua banca está zerada. É impossível atingir a meta agressiva com esse saldo.");
+        }
+        
+    }
+
+    function resetarMetaDiaria() {
+        bingoLucroDoDia = 0;
+        salvarDados();
+        atualizarDisplayBingo();
+        alert("Progresso do dia zerado! Comece novamente.");
+    }
+
+    // Inicialização ao carregar a página
+    window.onload = function() {
+        carregarDados(); 
+        atualizarDisplay();
+        toggleResultadoBotoes(false);
+    }
+</script>
+
+</body>
+</html>
