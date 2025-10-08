@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GERENCIADOR DE BANCA OB</title>
     <style>
-        /* URLs das Imagens (CORRIGIDO PARA ENDEREÇOS ESTÁVEIS) */
+        /* URLs das Imagens */
         :root {
-            /* Fundo principal será o fundo.png */
+            /* URLS ESTÁVEIS */
             --bg-image-url: url('https://yuri18luiz-sys.github.io/Gerenciamento-de-banca/fundo.png');
+            --header-image-url: url('https://yuri18luiz-sys.github.io/Gerenciamento-de-banca/titulo.png');
             --bull-img-url: url('https://yuri18luiz-sys.github.io/Gerenciamento-de-banca/touro.png.jpg');
             --bear-img-url: url('https://yuri18luiz-sys.github.io/Gerenciamento-de-banca/urso.png.jpg');
             --normal-green: #28a745; 
@@ -24,14 +25,13 @@
             
             /* FUNDO DO SITE COM IMAGEM DE GRÁFICOS */
             background-image: var(--bg-image-url);
-            background-size: contain; /* Ajustado para contain */
-            background-repeat: repeat; /* Repete para preencher a tela */
+            background-size: cover; /* COBRIR TODO O FUNDO */
             background-position: center;
             background-attachment: fixed;
             background-color: #0d1117; 
             
-            background-blend-mode: luminosity;
-            opacity: 1;
+            /* Ajuste de opacidade visual */
+            background-blend-mode: overlay;
         }
 
         .container { 
@@ -44,16 +44,32 @@
             border: 1px solid #30363d; 
         }
         
-        /* CABEÇALHO LIMPO */
+        /* CABEÇALHO COM IMAGEM DE FUNDO (titulo.png) */
         .header-area {
             position: relative;
             padding: 20px 0;
             margin-bottom: 20px;
             text-align: center;
+            border-radius: 10px;
+            overflow: hidden;
+            /* Fundo de segurança */
+            background-color: rgba(0, 0, 0, 0.5); 
+        }
+        .header-area::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: var(--header-image-url);
+            background-size: cover; 
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.25; /* Opacidade para leitura */
+            z-index: 1;
         }
 
         h1 { 
             position: relative;
+            z-index: 2;
             color: #FFF; 
             margin-bottom: 5px; 
             font-size: 2em;
@@ -62,6 +78,7 @@
         
         #personalizacao { 
             position: relative;
+            z-index: 2;
             text-align: center; 
             font-size: 1.3em; 
             font-weight: bold; 
@@ -155,7 +172,7 @@
         .banca-valor { 
             font-size: 1.3em; 
             font-weight: bold; 
-            color: var(--normal-green); /* Aplicando verde normal */
+            color: var(--normal-green); 
         }
         .banca-campo label { color: #8b949e; margin-bottom: 5px; }
 
